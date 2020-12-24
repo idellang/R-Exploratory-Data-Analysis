@@ -1,0 +1,243 @@
+---
+title: "Week 1 notes"
+author: "Me"
+date: "12/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(datasets)
+library(tidyverse)
+pollution = read_csv('avgpm25.csv') %>%
+      mutate(region = factor(region))
+```
+
+```{r}
+boxplot(pm25 ~region, data = pollution, col = 'red')
+```
+
+Multiple histograms
+```{r}
+par(mfrow = c(2,1), mar = c(4,4,2,1))
+hist(subset(pollution, region == 'east')$pm25, col = 'green')
+hist(subset(pollution, region == 'west')$pm25, col = 'green')
+```
+
+Scatterplot
+```{r}
+with(pollution, plot(latitude, pm25, col = region))
+abline(h = 12, lwd = 2, lty= 2)
+```
+Multiple scatterplot
+```{r}
+par(mfrow = c(1,2), mar = c(5,4,2,1))
+with(subset(pollution, region == 'west'), plot(latitude, pm25, main = 'west'))
+with(subset(pollution, region == 'east'), plot(latitude, pm25, main = 'east'))
+```
+
+#Plotting systems in R
+Base plot
+```{r}
+data(cars)
+with(cars, plot(speed, dist))
+```
+```{r}
+library(lattice)
+state = data.frame(state.x77, region = state.region)
+xyplot(Life.Exp ~ Income | region, data = state, layout = c(4,1))
+```
+```{r}
+library(ggplot2)
+data(mpg)
+qplot(displ, hwy, data = mpg)
+```
+
+
+##Base plotting system
+
+graphics: contains plotting functions for the base graphing systems including plot, hist, boxplot etc
+grDevices: contains all code implementing various graphics devices including X11, PDF, postscript, PNG, etc
+
+Lattice system is encapsulated in lattice package. 
+lattice: contains code for producing trellis graphics, which are independent of the 'base' graphics system, includef functions like xyplot, bwplot, levelplot
+grid: implements different graphing system independent of the 'base' system, the lattice package builds on top of grid. Seldom used directly.
+
+
+Base graphics
+- two phase in creating plot
+  - initialize a new plot
+  - annotating to an existing plot
+- plot or hist will launch graphics device and draw a plot on device
+- if the arguments in plot are not special class, then default method for plot is called. 
+- the base graphics has many parameters documented in ?par
+
+
+```{r}
+hist(airquality$Ozone) #draws new plot
+```
+```{r}
+with(airquality, plot(Wind, Ozone))
+```
+
+```{r}
+airquality = transform(airquality, Month = factor(Month))
+boxplot(Ozone ~ Month, airquality, xlab = 'Month', ylab = 'Ozone (pb)')
+```
+
+Other key parameters
+- pch: plotting symbol
+- lty : line type
+- lwd : line width
+- col : color. use colors() for vector of names
+- xlab : x-axis label
+- ylab : y-axis label
+
+Some important paramets
+par() - function is used to specify global graphics parameter that affect all plots in an R session
+- las : orientation of the axis label
+- bg : background color
+- mar : margin size
+- oma : outer margin size
+- mfrow : number of plots per row, column (plots are filled row wise)
+- mfcol : number of plots per row, column (plots are filled col wise)
+
+Default values
+```{r}
+par('lty')
+par('col')
+par('pch')
+par('bg')
+par('mar') #4 sides down, left, up, right
+par('mfrow')
+```
+
+Base plotting functions
+- plot : makes a scatterplot, or other types depending on the class of object
+- lines : add lines to plot. given a vector of x values and corresponding y or 2 column matrix
+- points : add points
+- text : add text labels using specified x,y coords
+- title : add annotations outside the plot like title, subtitle, outer margine
+- mtext : place text in the margins
+- axis : axis ticks
+
+```{r}
+with(airquality, plot(Wind, Ozone))
+title(main = 'Ozone and Wind in New York') # add title
+```
+
+```{r}
+with(airquality, plot(Wind, Ozone, main = 'Ozone and Wind in New York'))
+with(subset(airquality, Month == 5), points(Wind, Ozone, col = 'blue')) #add blue colors
+```
+
+With annotation
+```{r}
+with(airquality, plot(Wind, Ozone, main = 'Ozone and Wind in New York City', type = 'n')) #does not plot anything
+with(subset(airquality, Month == 5), points(Wind, Ozone, col = 'blue'))
+with(subset(airquality, Month != 5), points(Wind, Ozone, col = 'red'))
+legend('topright', pch = 1, col = c('blue', 'red'), legend = c('May', 'Other months'))
+```
+
+Base plot with regression line
+```{r}
+with(airquality, plot(Wind, Ozone, main = 'Ozone and Wind in New York City', pch = 20))
+model = lm(Ozone ~ Wind, airquality)
+abline(model, lwd = 1)
+```
+
+Multiple baseplots
+```{r}
+par(mfrow = c(1,2))
+with(airquality, {
+      plot(Wind, Ozone, main = 'Ozone and Wind')
+      plot(Solar.R, Ozone, main = 'Ozone and Solar Rad')
+})
+```
+
+Multiple baseplots
+```{r}
+par(mfrow = c(1,3), mar = c(4,4,2,1), oma = c(0, 0, 2,0))
+with(airquality, {
+      plot(Wind, Ozone, main = 'Ozone and Wind')
+      plot(Solar.R, Ozone, main = 'Ozone and Solar Rad')
+      plot(Temp, Ozone, main = 'Ozone and Temp')
+      mtext('Ozone and weather in New York city', outer = T)
+})
+```
+##Base plotting demo
+```{r}
+x = rnorm(100)
+hist(x)
+```
+
+```{r}
+y = rnorm(100)
+plot(x,y)
+```
+
+```{r}
+par(mar = c(4,4,2,2))
+plot(x,y)
+```
+
+check different points
+```{r}
+example(points)
+```
+
+
+```{r}
+x = rnorm(100)
+y = rnorm(100)
+plot(x,y)
+title('Scatterplot')
+text(-2,-2, 'Label')
+fit = lm(y ~ x)
+abline(fit)
+```
+
+#Graphics devices in R
+```{r}
+?Devices
+```
+
+How does a plot get created?
+```{r}
+library(datasets)
+with(faithful, plot(eruptions, waiting))
+title(main = 'Old faithful Geyser data')
+```
+Using graphic device
+```{r}
+pdf(file = 'myplot.pdf')
+
+#ccreate plot and send to file ( no plot on screen)
+with(faithful, plot(eruptions, waiting))
+title(main = 'Old faithful Geyser data')
+
+#close pdf file
+dev.off()
+```
+
+
+```{r}
+dev.cur()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

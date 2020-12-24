@@ -1,0 +1,467 @@
+---
+title: "Week 3"
+author: "Me"
+date: "12/23/2020"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\#Hierarchical clustering Organizes things that are close into groups -
+how to define close? - how do we group things - how do we visualize
+groupings - how do we interpret groupings
+
+Agglomerative approach - bottom up approach - find two closest things -
+put them together - find next closest
+
+Requires - defined distance - merging approach
+
+Produces - tree showing how close things are together (dendogram)
+
+How do we define close? - This is the most important step because
+garbage in = garbage out - Distance or similarity? - continuous :
+euclidian distance - continuous : correlation similarity - Binary :
+manhattan distance - Pick a distance that makes sense for your problem
+
+example
+
+```{r}
+set.seed(1234)
+par(mar = c(0,0,0,0))
+x = rnorm(12, mean = rep(1:3, each = 4), sd = .2)
+y = rnorm(12, mean = rep(c(1,2,1), each = 4), sd = .2)
+plot(x,y, col = 'blue', pch = 19, cex = 2)
+text(x + 0.05, y + 0.05, labels = as.character(1:12))
+```
+
+First calculate distance
+
+```{r}
+df = data.frame(x = x, y= y)
+dist(df)
+```
+
+```{r}
+distxy = dist(df)
+hclustering = hclust(distxy)
+plot(hclustering)
+```
+
+```{r}
+library(ggdendro)
+library(ggplot2)
+g = ggdendrogram(hclustering)
+g + labs(x = 'points', y = '', title = 'ggDendogram')
+```
+
+## prettier dendogram
+
+```{r}
+myplclust <- function( hclust, lab=hclust$labels, lab.col=rep(1,length(hclust$labels)), hang=0.1,...){
+ ## modifiction of plclust for plotting hclust objects *in colour*!
+ ## Copyright Eva KF Chan 2009
+ ## Arguments:
+ ##    hclust:    hclust object
+ ##    lab:        a character vector of labels of the leaves of the tree
+ ##    lab.col:    colour for the labels; NA=default device foreground colour
+ ##    hang:     as in hclust & plclust
+ ## Side effect:
+ ##    A display of hierarchical cluster with coloured leaf labels.
+ y <- rep(hclust$height,2)
+ x <- as.numeric(hclust$merge)
+ y <- y[which(x<0)]
+ x <- x[which(x<0)]
+ x <- abs(x)
+ y <- y[order(x)]
+ x <- x[order(x)]
+ plot( hclust, labels=FALSE, hang=hang, ... )
+ text( x=x, y=y[hclust$order]-(max(hclust$height)*hang), labels=lab[hclust$order], col=lab.col[hclust$order], srt=90, adj=c(1,0.5), xpd=NA, ... )}
+```
+
+```{r}
+myplclust(hclustering, lab = rep(1:3, each = 4), lab.col = rep(1:3, each = 4))
+```
+
+Check Rgraph gallery for other dendograms
+
+## Merging points
+
+Average linkage - center gravity of middle of points complete linkage -
+take farthest two points of clusters
+
+\#heatmap - visualizing matrix data - uses hierarchical clustering to
+organize rows and tables.
+
+```{r}
+set.seed(143)
+data_matrix = as.matrix(df)[sample(1:12),]
+
+heatmap(data_matrix)
+```
+
+Notes - picture may be unstable - change points - have different missing
+values - pick different distance - change merging strategy - change
+scale - deterministic - choosing to cut is not always obvious - used for
+exploration
+
+# Kmeans clustering
+
+Find patterns in data. - How do we define close? - How do we group
+things? - How visualize grouping? - How to interpret
+
+Distance metric - Continuous : Euclidian Distance - Continuous :
+correlation similarity - Binary : manhattan distance
+
+A partition approach - fix number of clusters - get centroids of each
+cluster - assign things to closest centroids - recalculate centroids
+
+Requires - distance metric - number of clusters - initial guess to
+cluster centroids
+
+Produces - Final estimate of cluster centroids - An assignment of each
+point to clusters.
+
+```{r}
+set.seed(1234)
+par(mar = c(0,0,0,0))
+x = rnorm(12, mean = rep(1:3, each = 4), sd = .2)
+y = rnorm(12, mean = rep(c(1,2,1), each = 4), sd = .2)
+
+plot(x,y, col = 'blue', pch = 19, cex = 2)
+text(x + 0.05, y + .05, labels = as.character(1:12))
+```
+
+## kmeans
+
+params = x, center, iter.max, nstart
+
+```{r}
+df = data.frame(x=x,y=y)
+kmeans_obj =  kmeans(df, centers = 3)
+names(kmeans_obj)
+kmeans_obj$cluster
+```
+
+```{r}
+par(mar = c(.2,.2,.4,.4))
+plot(x,y , col = kmeans_obj$cluster, pch = 19, cex = 2)
+points(kmeans_obj$centers, col = 1:3, pch = 3, cex = 3, lwd = 3)
+```
+
+Heatmaps
+
+```{r}
+set.seed(1234)
+data_matrix = as.matrix(df)[sample(1:12),]
+
+
+kmeans_obj2 = kmeans(data_matrix, centers = 3)
+par(mfrow = c(1,2), mar = c(2,4,.1,.1))
+image(t(data_matrix)[, nrow(data_matrix):1], yaxt = 'n')
+image(t(data_matrix)[, order(kmeans_obj$cluster)], yaxt = 'n')
+```
+
+Summary - kmeans require a number of clusters - pick by eye or intuition
+- pick by cross validation or information theory - determine number of
+clusters - kmeans is not deterministic - different \# of cluster -
+different number of iterations
+
+## Dimension reduction
+
+PCA and singular value decomposition
+
+```{r}
+set.seed(12345)
+par(mar = rep(.2,4))
+data_matix = matrix(rnorm(400), nrow = 40)
+image(1:10, 1:40, t(data_matix)[,nrow(data_matix):1])
+```
+
+Cluster the data
+
+```{r}
+par(mar = rep(.2,4))
+heatmap(data_matix)
+```
+
+add a pattern
+
+```{r}
+set.seed(678910)
+
+for (i in 1:40){
+  #flip a coin
+  coinFlip = rbinom(1, size = 1, prob = .5)
+  
+  if(coinFlip){
+    data_matix[i,] = data_matix[i,] + rep(c(0,3), each = 5)
+  }
+}
+```
+
+```{r}
+par(mar = rep(.2,4))
+image(1:10, 1:40, t(data_matix)[,nrow(data_matix):1])
+```
+
+```{r}
+par(mar = rep(.2,4))
+heatmap(data_matix)
+```
+
+Can see divisions on cols
+
+Patterns in rows in cols
+```{r}
+hh = hclust(dist(data_matix))
+data_matrix_ordered = data_matix[hh$order, ]
+
+par(mfrow = c(1,3))
+image(t(data_matrix_ordered)[,nrow(data_matrix_ordered):1])
+plot(rowMeans(data_matrix_ordered), 40:1, xlab = 'row mean', ylab=  'row', pch = 19)
+plot(colMeans(data_matrix_ordered),  xlab = 'Column', ylab=  'Column mean', pch = 19)
+```
+
+Related problems
+- You have multivariate variables X1,...Xn so X1 = (X11, ..... X1n)
+- Find a new set of variables that are uncorrelated and explains much variance as possible
+- find best matrix with fewer variables that explains original data
+- First goal is statistical, second goal is data compression
+
+Related solutions : PCA/SVD
+
+SVD - if X is a matrix with each var in a column and each observation in a row then SVD is a matrix decomposition
+    X = UDV^t
+  Where columns U are orthogonal(left singular vectors), columns V are orthogonal(right singular vectors), D is diagonal matrix
+
+PCA - PCA components are equal to the right singular values if you first scale (subtract mean/ sd) of the variables
+
+
+Components of SVD u and v
+
+```{r}
+svd1 = svd(scale(data_matrix_ordered))
+
+par(mfrow = c(1,3))
+
+image(t(data_matrix_ordered)[, nrow(data_matrix_ordered):1])
+plot(svd1$u[,1], 40:1, xlab=  'Row', ylab = 'First left singular vector', pch = 19)
+plot(svd1$v[,1], xlab = 'col', ylab = 'First right singular vector', pch = 19)
+
+```
+
+SVD immediately picked up the pattern
+
+
+Variance explained
+
+```{r}
+par(mfrow = c(1,2))
+plot(svd1$d, xlab=  'col', ylab = 'singular value', pch = 19)
+plot(svd1$d^2/sum(svd1$d^2), xlab = 'col', ylab = 'Prob of variance explained', pch = 19)
+```
+
+
+Relationship to PCA
+```{r}
+svd1 = svd(scale(data_matrix_ordered))
+pca1 = prcomp(data_matrix_ordered, scale = T)
+
+plot(pca1$rotation[,1], svd1$v[,1], pch = 19, xlab = 'PCA1', ylab = 'Right Singular Value 1')
+abline(c(0,1))
+```
+
+
+SVD and PCA are essentially same things. 
+
+Components of SVD - variance explained
+```{r}
+constant_matrix = data_matrix_ordered*0
+
+for (i in dim(data_matrix_ordered)[1]){
+  constant_matrix[i,] <- rep(c(0,1), each = 5)
+  }
+
+svd1= svd(constant_matrix)
+par(mfrow = c(1,3))
+
+image(t(constant_matrix)[,nrow(constant_matrix):1])
+plot(svd1$d, xlab = 'Col', ylab = 'Singular Value', pch = 19)
+plot(svd1$d^2/ sum(svd1$d^2), xlab = 'Col', ylab = 'Prop of variance explained', pch= 19)
+```
+
+
+Add pattern
+```{r}
+set.seed(678910)
+
+for (i in 1:40){
+  #flip a coin
+  coinFlip1 = rbinom(1, size = 1, prob= .5)
+  coinFlip2 = rbinom(1, size = 1, prob = .5)
+  
+  if (coinFlip1){
+    data_matix[i,] = data_matix[i,] + rep(c(0,5), each = 5)
+  }
+  
+  if (coinFlip2){
+    data_matix[i,] = data_matix[i,] + rep(c(0,5), 5)
+  }
+}
+
+hh  = hclust(dist(data_matix))
+data_matrix_ordered = data_matix[hh$order,]
+```
+
+```{r}
+svd2 = svd(scale(data_matrix_ordered))
+
+par(mfrow = c(1,3))
+
+image(t(data_matrix_ordered)[, nrow(data_matrix_ordered):1])
+plot(rep(c(0,1), each = 5), pch = 19, xlab = 'Column', ylab = 'Pattern1')
+plot(rep(c(0,1), 5), pch = 19, xlab = 'Column', ylab = 'Pattern1')
+```
+Run SVD, must catch the pattern
+
+```{r}
+svd2 = svd(scale(data_matrix_ordered))
+
+par(mfrow = c(1,3))
+
+image(t(data_matrix_ordered)[, nrow(data_matrix_ordered):1])
+plot(svd2$v[,1], pch = 19, xlab = 'column', ylab = 'First right Singular Vector')
+plot(svd2$v[,2], pch= 19, xlab = 'Column', ylab = 'Second right singular column')
+```
+
+d and variance explained
+
+```{r}
+svd1 = svd(scale(data_matrix_ordered))
+
+par(mfrow = c(1,2))
+
+plot(svd1$d, xlab = 'Col', ylab = 'Singular Value', pch = 19)
+plot(svd1$d^2/ sum(svd1$d^2), xlab = 'Col', ylab = '% of variance explained', pch = 19)
+```
+
+
+Missing values
+```{r}
+data_matrix2 = data_matrix_ordered
+
+#randomly insert data
+data_matrix2[sample(1:100, size = 40, replace = FALSE)] = NA
+
+svd1 = svd(scale(data_matrix2))
+```
+
+Impute
+```{r}
+library(impute)
+
+data_matrix2 = impute.knn(data_matrix2)$data
+svd1 = svd(scale(data_matrix_ordered))
+svd2 = svd(scale(data_matrix2))
+
+par(mfrow = c(1,2))
+
+plot(svd1$v[,1], pch = 19)
+plot(svd2$v[,1], pch = 19)
+```
+
+Notes
+- scale matters
+- mix real patterns
+- computationally intensive
+- alternatives
+  - factor analysis
+  - independent component analysis
+  - latent semantic analysis
+
+
+## Working with colors
+
+Plotting and color
+- default colors are bad
+- There are R functions that are handy.
+
+grDevices has two functions
+- colorRamp
+- colorRampPalette
+
+These functions take palette of colors and interpolate between them
+colors() list names of colors
+```{r}
+colors()[sample(20)]
+```
+
+colorRamp: takes a palette of colors and returns a function that takes values from 0 to 1, indicating extreme colors of the palette. Similar to gray
+colorRampPalette : takes palette of colors, returns a function that takes integer arguments and returns a vector of colors interpolating the palette. 
+
+```{r}
+pal = colorRamp(c('red','blue'))
+pal(0) #red
+pal(1) #blue
+```
+From red to blue
+```{r}
+pal(seq(0,1, len = 10))
+```
+
+```{r}
+pal = colorRampPalette(c('red','yellow'))
+pal(2)
+pal(10)
+```
+
+RcolorBrewer package
+- has interesting palettes
+- Types of palette
+  - sequential
+  - diverging 
+  - qualitative (not ordered)
+
+```{r}
+library(RColorBrewer)
+cols = brewer.pal(3,'Set1')
+pal = colorRampPalette(cols)
+image(volcano, col = pal(20))
+```
+
+Smooth scatter function
+```{r}
+x = rnorm(10000)
+y = rnorm(10000)
+smoothScatter(x,y, colramp = colorRampPalette(c("white", 'red')))
+```
+
+Other notes
+- rgb function produces any color via red, green, blue
+- alpha parameter to transparency
+- color space package can be used to control different colors
+
+```{r}
+plot(x,y,pch = 19)
+```
+
+
+```{r}
+plot(x,y, col = rgb(0,0,0,.2), pch = 19)
+```
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,193 @@
+---
+title: "Week 2"
+author: "Me"
+date: "12/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Lattice plotting system
+- for multiple plots
+- calls from grid package
+- create entire plot at once in a single function call.
+
+Lattice functions:
+- xyplot : scatterplots
+- bwplot : boxpots
+- histogram : histograms
+- stripplot : boxplot that are points
+- dotplot : violin strings
+- splom : scatterplot matrix like pairs
+- levelplot, contourplot for image data.  
+
+Xyplot
+- takes formula
+- y ~  x | f * g, data
+- f and g are categorical that you condition on
+- scatterplot of y and x for every level of f and g
+
+```{r}
+library(lattice)
+library(datasets)
+
+xyplot(Ozone ~ Wind, data = airquality)
+```
+
+```{r}
+airquality = transform(airquality, Month = factor(Month))
+xyplot(Ozone ~ Wind | Month, data = airquality, layout = c(5,1))
+```
+
+Lattice behavior
+- lattice graphic functions returns object of class trellis.
+- print method for lattice do the work of plotting the data on graphics device. 
+
+
+Lattice panel functions
+- panel functions receive x and y coords along with arguments
+
+```{r}
+set.seed(100)
+x = rnorm(100)
+f = rep(0:1, each = 50)
+y = x + f - f * x + rnorm(100, sd = .5)
+
+f = factor(f, labels = c('G1','G2'))
+xyplot(y ~ x | f, layout = c(2,1))
+```
+
+Custom panel function
+```{r}
+xyplot(y ~ x | f, panel  = function(x,y,...){
+      panel.xyplot(x,y, ...) # first call default panel for xyplot
+      panel.abline(h = median(y), lty = 2)
+})
+```
+
+
+add a regression line
+```{r}
+xyplot(y ~ x | f, panel  = function(x,y,...){
+      panel.xyplot(x,y, ...) # first call default panel for xyplot
+      panel.lmline(x,y, col = 2)
+})
+```
+
+## Ggplot2
+- Implementation of grammar of graphics
+- shorten distance from mind to page. 
+
+### qplot
+- quick plot basics
+- dataframe to organize data
+- aesthetics (size, shape, color) and geoms(points, lines)
+- factors indicate subsets of data. 
+
+
+```{r}
+library(ggplot2)
+str(mpg)
+```
+
+```{r}
+qplot(displ, hwy, data = mpg, color = drv)
+```
+
+
+Adding geom
+```{r}
+qplot(displ, hwy, data = mpg, geom = c('point','smooth'))
+```
+
+```{r}
+qplot(hwy, data = mpg, fill = drv)
+```
+Facets
+```{r}
+qplot(displ, hwy, data = mpg, facets = . ~ drv)
+```
+
+
+```{r}
+qplot(hwy, data = mpg, facets = drv ~., binwidth = 2)
+```
+
+Components
+- dataframe
+- aesthetic mappings : how data are mapped to color, size, points
+- geoms : geometric objects like points, lines, shapes.
+- facets : conditional plots
+- stats : statistical transformations like binning, quantiles, smoothing
+- scales : how different variables are encoded
+- coordinate system
+
+artist palette model. 
+Plots are buildup in layers
+- plot data
+- overlay a summary
+- metadata and annotation
+
+Annotations
+- xlab(), ylab(), labs(), ggtitle()
+- each of the geom has options to modify
+- for things that only makes sense globally, use theme()
+- theme_bw() : plain, theme_gray() : default
+
+Notes on axis limits
+
+```{r}
+testdat = data.frame(x = 1:100, y = rnorm(100))
+testdat[50,2] = 100
+
+plot(testdat$x, testdat$y, type = 'l', ylim = c(-3,3))
+```
+
+Missing outlier
+```{r}
+g = ggplot(testdat, aes(x,y))
+g + geom_line() + ylim(-3,3)
+```
+
+```{r}
+g + geom_line() + coord_cartesian(ylim = c(-3,3))
+```
+
+
+## quiz
+
+
+```{r}
+library(nlme)
+library(lattice)
+xyplot(weight ~ Time | Diet, BodyWeight)
+```
+
+```{r}
+library(datasets)
+data(airquality)
+
+qplot(Wind, Ozone, data = airquality)
+
+airquality = transform(airquality, Month = factor(Month))
+qplot(Wind, Ozone, data = airquality, facets = . ~ Month)
+
+qplot(Wind, Ozone, data = airquality, facets = . ~ factor(Month))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
